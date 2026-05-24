@@ -1,0 +1,15 @@
+{
+  "categories": [
+    "backend",
+    "data",
+    "devops",
+    "frontend",
+    "other"
+  ],
+  "levels": [
+    "internship",
+    "junior",
+    "regular",
+    "senior"
+  ]
+}

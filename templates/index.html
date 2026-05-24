@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Job Offer Classifier</title>
+    <style>
+        :root {
+            --bg: #060816;
+            --bg-soft: #0d1226;
+            --panel: rgba(10, 16, 32, 0.84);
+            --panel-strong: rgba(14, 22, 43, 0.96);
+            --ink: #edf4ff;
+            --muted: #93a7ca;
+            --line: rgba(127, 156, 214, 0.18);
+            --cyan: #69d7ff;
+            --blue: #4c7dff;
+            --green: #68f2b5;
+            --orange: #ff9f66;
+            --pink: #ff79c6;
+            --red: #ff7979;
+            --shadow: 0 30px 80px rgba(0, 0, 0, 0.42);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Segoe UI", "Aptos", sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at 12% 18%, rgba(105, 215, 255, 0.22), transparent 22%),
+                radial-gradient(circle at 86% 14%, rgba(104, 242, 181, 0.15), transparent 18%),
+                radial-gradient(circle at 82% 88%, rgba(255, 159, 102, 0.14), transparent 20%),
+                linear-gradient(140deg, #040611 0%, #0b1020 45%, #10182a 100%);
+            padding: 30px 18px;
+        }
+
+        .shell {
+            max-width: 1240px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 24px;
+        }
+
+        .panel {
+            position: relative;
+            overflow: hidden;
+            border-radius: 30px;
+            border: 1px solid var(--line);
+            background: var(--panel);
+            backdrop-filter: blur(18px);
+            box-shadow: var(--shadow);
+        }
+
+        .panel::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 18%),
+                linear-gradient(135deg, rgba(105, 215, 255, 0.08), transparent 35%, transparent 70%, rgba(255, 121, 198, 0.05));
+            pointer-events: none;
+        }
+
+        .hero,
+        .result {
+            position: relative;
+            z-index: 1;
+            padding: 30px;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(105, 215, 255, 0.25);
+            background: rgba(105, 215, 255, 0.08);
+            color: var(--cyan);
+            font-size: 0.76rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin: 18px 0 12px;
+            font-size: clamp(2.4rem, 4vw, 4.2rem);
+            line-height: 0.96;
+            letter-spacing: -0.05em;
+            font-family: "Cambria", "Palatino Linotype", serif;
+        }
+
+        h2 {
+            margin: 18px 0 10px;
+            font-size: 2rem;
+            line-height: 1;
+            font-family: "Cambria", "Palatino Linotype", serif;
+        }
+
+        p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.75;
+            font-size: 1rem;
+        }
+
+        .subtitle {
+            max-width: 690px;
+        }
+
+        .hero-strip {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 22px;
+        }
+
+        .mini-card {
+            padding: 14px 16px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(127, 156, 214, 0.12);
+        }
+
+        .mini-card small {
+            display: block;
+            margin-bottom: 6px;
+            color: #80c4ff;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            font-size: 0.72rem;
+        }
+
+        .mini-card strong {
+            display: block;
+            font-size: 1rem;
+            color: #f4f8ff;
+        }
+
+        .form-wrap {
+            margin-top: 24px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 700;
+            color: #d8e7ff;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 350px;
+            padding: 20px;
+            resize: vertical;
+            border-radius: 24px;
+            border: 1px solid rgba(127, 156, 214, 0.18);
+            background:
+                linear-gradient(180deg, rgba(13, 20, 38, 0.96), rgba(8, 14, 28, 0.98));
+            color: var(--ink);
+            font: inherit;
+            font-size: 1rem;
+            line-height: 1.65;
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.04),
+                inset 0 -12px 24px rgba(0, 0, 0, 0.12);
+            scrollbar-width: thin;
+            scrollbar-color: rgba(105, 215, 255, 0.38) rgba(255, 255, 255, 0.04);
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: rgba(105, 215, 255, 0.45);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.05),
+                0 0 0 4px rgba(105, 215, 255, 0.08),
+                0 0 40px rgba(105, 215, 255, 0.18);
+        }
+
+        textarea::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        textarea::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.04);
+            border-left: 1px solid rgba(127, 156, 214, 0.08);
+            border-radius: 999px;
+        }
+
+        textarea::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, rgba(105, 215, 255, 0.55), rgba(76, 125, 255, 0.58));
+            border-radius: 999px;
+            border: 2px solid rgba(11, 19, 35, 0.92);
+            box-shadow: 0 0 10px rgba(105, 215, 255, 0.14);
+        }
+
+        textarea::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, rgba(126, 240, 199, 0.62), rgba(88, 193, 255, 0.66));
+        }
+
+        textarea::-webkit-scrollbar-corner {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        button {
+            border: 0;
+            border-radius: 999px;
+            padding: 14px 22px;
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+        }
+
+        .primary {
+            color: #f7fbff;
+            background: linear-gradient(135deg, #58c8ff, #406bff 60%, #6859ff);
+            box-shadow: 0 14px 30px rgba(69, 116, 255, 0.28);
+        }
+
+        .secondary {
+            color: #dbe7ff;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(127, 156, 214, 0.16);
+        }
+
+        .caption {
+            margin-top: 16px;
+            padding: 14px 16px;
+            border-radius: 18px;
+            border: 1px solid rgba(127, 156, 214, 0.12);
+            background: rgba(255, 255, 255, 0.03);
+            color: #8da4c7;
+            font-size: 0.93rem;
+        }
+
+        .result-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .hero-glow {
+            width: 68px;
+            height: 68px;
+            border-radius: 22px;
+            background:
+                radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9), transparent 18%),
+                linear-gradient(135deg, rgba(105, 215, 255, 0.26), rgba(76, 125, 255, 0.2));
+            border: 1px solid rgba(127, 156, 214, 0.18);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.06),
+                0 0 30px rgba(105, 215, 255, 0.18);
+        }
+
+        .result-grid {
+            display: grid;
+            gap: 14px;
+            margin-top: 22px;
+        }
+
+        .metric {
+            padding: 18px;
+            border-radius: 22px;
+            border: 1px solid rgba(127, 156, 214, 0.14);
+            background: linear-gradient(180deg, rgba(14, 23, 42, 0.94), rgba(10, 17, 31, 0.98));
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.04),
+                0 12px 28px rgba(0, 0, 0, 0.16);
+        }
+
+        .metric small {
+            display: block;
+            margin-bottom: 10px;
+            color: #7fb7eb;
+            text-transform: uppercase;
+            letter-spacing: 0.13em;
+            font-size: 0.72rem;
+        }
+
+        .metric strong {
+            font-size: 1.2rem;
+            font-family: "Cambria", "Palatino Linotype", serif;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 14px;
+            border-radius: 999px;
+            font-size: 0.96rem;
+            font-weight: 700;
+            min-width: 120px;
+            border: 1px solid transparent;
+        }
+
+        .badge-neutral {
+            color: #dfe9fb;
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(127, 156, 214, 0.16);
+        }
+
+        .badge-backend {
+            color: #dff6ff;
+            background: rgba(105, 215, 255, 0.14);
+            border-color: rgba(105, 215, 255, 0.28);
+            box-shadow: 0 0 24px rgba(105, 215, 255, 0.12);
+        }
+
+        .badge-frontend {
+            color: #ffe7f6;
+            background: rgba(255, 121, 198, 0.14);
+            border-color: rgba(255, 121, 198, 0.28);
+            box-shadow: 0 0 24px rgba(255, 121, 198, 0.1);
+        }
+
+        .badge-data {
+            color: #dfffee;
+            background: rgba(104, 242, 181, 0.14);
+            border-color: rgba(104, 242, 181, 0.28);
+            box-shadow: 0 0 24px rgba(104, 242, 181, 0.1);
+        }
+
+        .badge-devops {
+            color: #fff0e3;
+            background: rgba(255, 159, 102, 0.14);
+            border-color: rgba(255, 159, 102, 0.28);
+            box-shadow: 0 0 24px rgba(255, 159, 102, 0.1);
+        }
+
+        .badge-other {
+            color: #ecebff;
+            background: rgba(141, 150, 255, 0.13);
+            border-color: rgba(141, 150, 255, 0.26);
+        }
+
+        .badge-level {
+            color: #edf4ff;
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(127, 156, 214, 0.16);
+        }
+
+        .badge-internship {
+            color: #fff4dd;
+            background: rgba(255, 182, 94, 0.14);
+            border-color: rgba(255, 182, 94, 0.24);
+        }
+
+        .badge-junior {
+            color: #ddf8ff;
+            background: rgba(105, 215, 255, 0.14);
+            border-color: rgba(105, 215, 255, 0.24);
+        }
+
+        .badge-regular {
+            color: #e8eeff;
+            background: rgba(124, 133, 255, 0.14);
+            border-color: rgba(124, 133, 255, 0.24);
+        }
+
+        .badge-senior {
+            color: #e7ffef;
+            background: rgba(104, 242, 181, 0.14);
+            border-color: rgba(104, 242, 181, 0.24);
+        }
+
+        .badge-yes {
+            color: #082114;
+            background: linear-gradient(135deg, #7ff0bf, #b9ffd8);
+            box-shadow: 0 0 24px rgba(104, 242, 181, 0.24);
+        }
+
+        .badge-no {
+            color: #ffe9ea;
+            background: rgba(255, 121, 121, 0.14);
+            border-color: rgba(255, 121, 121, 0.24);
+            box-shadow: 0 0 24px rgba(255, 121, 121, 0.12);
+        }
+
+        .confidence-box {
+            display: grid;
+            gap: 12px;
+        }
+
+        .confidence-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .confidence-label {
+            font-weight: 700;
+            color: #dce9fb;
+        }
+
+        .confidence-value {
+            font-size: 1.15rem;
+            font-family: "Cambria", "Palatino Linotype", serif;
+        }
+
+        .confidence-track {
+            width: 100%;
+            height: 14px;
+            border-radius: 999px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(127, 156, 214, 0.14);
+        }
+
+        .confidence-fill {
+            width: 0%;
+            height: 100%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #ff7a7a 0%, #ffb15e 35%, #68d8ff 68%, #69f2b3 100%);
+            box-shadow: 0 0 24px rgba(105, 215, 255, 0.18);
+            transition: width 0.35s ease;
+        }
+
+        .confidence-note {
+            color: #89a4c9;
+            font-size: 0.92rem;
+        }
+
+        .status {
+            margin-top: 18px;
+            min-height: 24px;
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .good {
+            color: var(--green);
+            text-shadow: 0 0 18px rgba(104, 242, 181, 0.18);
+        }
+
+        .status-bad {
+            color: #ffb0b0;
+            text-shadow: 0 0 18px rgba(255, 121, 121, 0.12);
+        }
+
+        @media (max-width: 980px) {
+            .shell {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-strip {
+                grid-template-columns: 1fr;
+            }
+
+            textarea {
+                min-height: 250px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .hero,
+            .result {
+                padding: 22px;
+            }
+
+            h1 {
+                font-size: 2.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="shell">
+        <section class="panel hero">
+            <span class="eyebrow">Local Demo Interface</span>
+            <h1>Job Offer Classifier</h1>
+            <p class="subtitle">Paste a vacancy, run the model, and review the prediction.</p>
+
+            <div class="hero-strip">
+                <div class="mini-card">
+                    <small>Main Goal</small>
+                    <strong>Classify IT job offers</strong>
+                </div>
+                <div class="mini-card">
+                    <small>Model Stack</small>
+                    <strong>TF-IDF + Logistic Regression</strong>
+                </div>
+                <div class="mini-card">
+                    <small>Output</small>
+                    <strong>Category, level, confidence</strong>
+                </div>
+            </div>
+
+            <div class="form-wrap">
+                <label for="job-text">Job offer text</label>
+                <textarea id="job-text" placeholder="Paste a full job offer here...">{{ example_text }}</textarea>
+                <div class="actions">
+                    <button class="primary" id="predict-btn" type="button">Classify Offer</button>
+                    <button class="secondary" id="example-btn" type="button">Load Example</button>
+                    <button class="secondary" id="clear-btn" type="button">Clear</button>
+                </div>
+                <div class="caption">Tip: the technical part of a vacancy usually gives the cleanest result.</div>
+            </div>
+        </section>
+
+        <aside class="panel result">
+            <div class="result-top">
+                <div>
+                    <span class="eyebrow">Prediction Dashboard</span>
+                    <h2>Live Result</h2>
+                    <p>Category, level, confidence, recommendation.</p>
+                </div>
+                <div class="hero-glow"></div>
+            </div>
+
+            <div class="result-grid">
+                <div class="metric">
+                    <small>Category</small>
+                    <span class="badge badge-neutral" id="category-badge">-</span>
+                </div>
+
+                <div class="metric">
+                    <small>Level</small>
+                    <span class="badge badge-level" id="level-badge">-</span>
+                </div>
+
+                <div class="metric confidence-box">
+                    <small>Confidence</small>
+                    <div class="confidence-row">
+                        <span class="confidence-label" id="confidence-text">Waiting</span>
+                        <strong class="confidence-value" id="confidence-value">-</strong>
+                    </div>
+                    <div class="confidence-track">
+                        <div class="confidence-fill" id="confidence-fill"></div>
+                    </div>
+                    <div class="confidence-note" id="confidence-note">
+                        Confidence reflects how certain the model is.
+                    </div>
+                </div>
+
+                <div class="metric">
+                    <small>Recommended</small>
+                    <span class="badge badge-neutral" id="recommended-badge">-</span>
+                </div>
+            </div>
+
+            <div class="status" id="status">Waiting for input.</div>
+        </aside>
+    </main>
+
+    <script>
+        const exampleText = {{ example_text | tojson }};
+        const textArea = document.getElementById("job-text");
+        const predictBtn = document.getElementById("predict-btn");
+        const exampleBtn = document.getElementById("example-btn");
+        const clearBtn = document.getElementById("clear-btn");
+        const statusEl = document.getElementById("status");
+
+        const categoryBadge = document.getElementById("category-badge");
+        const levelBadge = document.getElementById("level-badge");
+        const confidenceText = document.getElementById("confidence-text");
+        const confidenceValue = document.getElementById("confidence-value");
+        const confidenceFill = document.getElementById("confidence-fill");
+        const confidenceNote = document.getElementById("confidence-note");
+        const recommendedBadge = document.getElementById("recommended-badge");
+
+        const categoryClasses = {
+            backend: "badge-backend",
+            frontend: "badge-frontend",
+            data: "badge-data",
+            devops: "badge-devops",
+            other: "badge-other",
+        };
+
+        const levelClasses = {
+            internship: "badge-internship",
+            junior: "badge-junior",
+            regular: "badge-regular",
+            senior: "badge-senior",
+        };
+
+        function setStatus(message, kind = "neutral") {
+            statusEl.textContent = message;
+            statusEl.className = "status";
+
+            if (kind === "good") {
+                statusEl.classList.add("good");
+            }
+
+            if (kind === "bad") {
+                statusEl.classList.add("status-bad");
+            }
+        }
+
+        function setBadge(el, text, className) {
+            el.textContent = text;
+            el.className = `badge ${className}`;
+        }
+
+        function describeConfidence(value) {
+            if (value >= 0.8) {
+                return {
+                    label: "High confidence",
+                    note: "Strong prediction.",
+                };
+            }
+
+            if (value >= 0.55) {
+                return {
+                    label: "Medium confidence",
+                    note: "Reasonable result.",
+                };
+            }
+
+            return {
+                label: "Low confidence",
+                note: "Interpret with caution.",
+            };
+        }
+
+        function renderEmptyState() {
+            setBadge(categoryBadge, "-", "badge-neutral");
+            setBadge(levelBadge, "-", "badge-level");
+            setBadge(recommendedBadge, "-", "badge-neutral");
+            confidenceText.textContent = "Waiting";
+            confidenceValue.textContent = "-";
+            confidenceFill.style.width = "0%";
+            confidenceNote.textContent = "Confidence reflects how certain the model is.";
+        }
+
+        function renderResult(data) {
+            const category = String(data.category || "-").toLowerCase();
+            const level = String(data.level || "-");
+            const confidence = Number(data.confidence || 0);
+            const recommended = Boolean(data.recommended);
+            const confidenceMeta = describeConfidence(confidence);
+
+            setBadge(categoryBadge, category, categoryClasses[category] || "badge-neutral");
+            setBadge(levelBadge, level, levelClasses[level.toLowerCase()] || "badge-level");
+            setBadge(recommendedBadge, recommended ? "true" : "false", recommended ? "badge-yes" : "badge-no");
+
+            confidenceText.textContent = confidenceMeta.label;
+            confidenceValue.textContent = confidence.toFixed(4);
+            confidenceFill.style.width = `${Math.max(0, Math.min(confidence, 1)) * 100}%`;
+            confidenceNote.textContent = confidenceMeta.note;
+        }
+
+        async function classifyOffer() {
+            const text = textArea.value.trim();
+            if (!text) {
+                setStatus("Paste a job offer first.", "bad");
+                return;
+            }
+
+            predictBtn.disabled = true;
+            setStatus("Running prediction...");
+
+            try {
+                const response = await fetch("/api/predict", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text }),
+                });
+
+                const payload = await response.json();
+                if (!response.ok) {
+                    throw new Error(payload.detail || "Prediction failed.");
+                }
+
+                renderResult(payload);
+                setStatus("Prediction completed.", "good");
+            } catch (error) {
+                setStatus(error.message || "Prediction failed.", "bad");
+            } finally {
+                predictBtn.disabled = false;
+            }
+        }
+
+        predictBtn.addEventListener("click", classifyOffer);
+        exampleBtn.addEventListener("click", () => {
+            textArea.value = exampleText;
+            setStatus("Example loaded.");
+        });
+        clearBtn.addEventListener("click", () => {
+            textArea.value = "";
+            renderEmptyState();
+            setStatus("Cleared.");
+        });
+
+        renderEmptyState();
+    </script>
+</body>
+</html>
