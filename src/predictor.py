@@ -164,6 +164,12 @@ class JobOfferPredictor:
         "4+ years",
         "3+ years",
     }
+    NON_LEVEL_JUNIOR_CONTEXTS = {
+        "mentor junior",
+        "mentor junior team members",
+        "mentoring junior",
+        "junior team members",
+    }
 
     def __init__(self, model_dir: str | Path | None = None) -> None:
         self.model_dir = Path(model_dir) if model_dir else MODEL_DIR
@@ -264,6 +270,8 @@ class JobOfferPredictor:
                 return "senior"
 
         if any(cls._contains_phrase(lowered, keyword) for keyword in cls.LEVEL_HINTS["junior"]):
+            if any(context in lowered for context in cls.NON_LEVEL_JUNIOR_CONTEXTS):
+                return "regular"
             if any(cls._contains_phrase(lowered, keyword) for keyword in cls.LEVEL_HINTS["regular"]):
                 return "regular"
             return "junior"

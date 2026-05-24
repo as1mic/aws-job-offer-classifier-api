@@ -118,6 +118,8 @@ Available local routes:
 
 Detailed deployment steps are in [docs/aws_deployment_steps.md](/c:/Users/Asim/Desktop/aws-job-offer-classifier-api/docs/aws_deployment_steps.md).
 
+For Lambda packaging, build the final deployment zip on Linux, for example in AWS CloudShell, because `numpy`, `scipy`, and `scikit-learn` are compiled dependencies.
+
 ## University requirements checklist
 
 - REST API endpoint: yes, via Lambda + API Gateway

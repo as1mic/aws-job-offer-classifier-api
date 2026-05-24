@@ -96,3 +96,12 @@ def test_experienced_backend_role_not_forced_to_internship(predictor):
 
     assert result["category"] == "backend"
     assert result["level"] in {"regular", "senior"}
+
+
+def test_mentoring_junior_team_members_does_not_force_junior_level(predictor):
+    result = predictor.predict(
+        "Python engineer with 3+ years of development experience, FastAPI, Docker, AWS, CI/CD, "
+        "and responsibility to mentor junior team members"
+    )
+
+    assert result["level"] == "regular"

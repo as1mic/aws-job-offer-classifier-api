@@ -1,5 +1,14 @@
 {
+  "dataset": {
+    "rows": 21716,
+    "train_rows": 17372,
+    "test_rows": 4344
+  },
   "category_model": {
+    "accuracy": 0.7719,
+    "precision_weighted": 0.7825,
+    "recall_weighted": 0.7719,
+    "f1_weighted": 0.7736,
     "classification_report": {
       "backend": {
         "precision": 0.7432432432432432,
@@ -44,53 +53,13 @@
         "f1-score": 0.7735785372442415,
         "support": 4344.0
       }
-    },
-    "confusion_matrix_labels": [
-      "backend",
-      "data",
-      "devops",
-      "frontend",
-      "other"
-    ],
-    "confusion_matrix": [
-      [
-        715,
-        60,
-        15,
-        63,
-        107
-      ],
-      [
-        52,
-        532,
-        21,
-        9,
-        196
-      ],
-      [
-        64,
-        27,
-        629,
-        9,
-        50
-      ],
-      [
-        72,
-        27,
-        9,
-        673,
-        54
-      ],
-      [
-        59,
-        79,
-        7,
-        11,
-        804
-      ]
-    ]
+    }
   },
   "level_model": {
+    "accuracy": 0.6646,
+    "precision_weighted": 0.671,
+    "recall_weighted": 0.6646,
+    "f1_weighted": 0.6653,
     "classification_report": {
       "internship": {
         "precision": 0.819614711033275,
@@ -129,38 +98,6 @@
         "f1-score": 0.6652752259649354,
         "support": 4344.0
       }
-    },
-    "confusion_matrix_labels": [
-      "internship",
-      "junior",
-      "regular",
-      "senior"
-    ],
-    "confusion_matrix": [
-      [
-        468,
-        153,
-        55,
-        68
-      ],
-      [
-        57,
-        716,
-        330,
-        97
-      ],
-      [
-        28,
-        264,
-        749,
-        159
-      ],
-      [
-        18,
-        98,
-        130,
-        954
-      ]
-    ]
+    }
   }
 }
